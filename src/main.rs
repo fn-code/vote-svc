@@ -12,10 +12,6 @@ use dotenvy;
 
 
 
-async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok(); // load .env into process env
@@ -71,15 +67,7 @@ async fn main() -> Result<()> {
 
     let app_data = app::AppHandlerData { candidate_uc };
 
-    server.add_routers(|cfg| {
-        cfg.service(
-            web::scope("/users").route("", web::to(|| async { HttpResponse::Ok().body("users") })),
-        );
-    });
-
     server.add_routers(candidate::delivery::http::routes);
-
-
     let mut server = server; // keep `server` as owned value
 
     // Create a oneshot channel to signal shutdown

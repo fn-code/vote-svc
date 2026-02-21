@@ -49,7 +49,30 @@ src/
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/candidates` | List all candidates |
-| `GET` | `/users` | Placeholder users route |
+
+### Response Format
+
+All endpoints return a unified JSON response envelope:
+
+**Success**
+```json
+{
+  "status": true,
+  "message": "Successfully processed candidate",
+  "error_code": "",
+  "data": { ... }
+}
+```
+
+**Error**
+```json
+{
+  "status": false,
+  "message": "failed process data",
+  "error_code": "-1",
+  "data": null
+}
+```
 
 ## Configuration
 
