@@ -85,8 +85,8 @@ cp .env.example .env
 `.env.example`:
 
 ```env
-APP_ENV=production
-APP_NAME=EVOTE-SERVICE
+APP__ENV=production
+APP__NAME=EVOTE-SERVICE
 
 SERVER__ADDR=0.0.0.0
 SERVER__PORT=8080
