@@ -1,5 +1,5 @@
 use crate::candidate::usecase::get::*;
-use crate::{app, utils};
+use crate::utils::{app, response};
 use actix_web::{HttpResponse, web};
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +19,7 @@ pub async fn get_candidate(handler: web::Data<app::AppHandlerData>) -> HttpRespo
         Ok(response) => response,
         Err(e) => {
             println!("Error: {}", e);
-            return HttpResponse::InternalServerError().json(utils::response::error::<()>(
+            return HttpResponse::InternalServerError().json(response::error::<()>(
                 None,
                 "failed process data".into(),
                 "-1".into(),
@@ -27,7 +27,7 @@ pub async fn get_candidate(handler: web::Data<app::AppHandlerData>) -> HttpRespo
         }
     };
 
-    HttpResponse::Ok().json(utils::response::success(
+    HttpResponse::Ok().json(response::success(
         Some(response),
         "Successfully processed candidate".into(),
     ))
@@ -44,15 +44,16 @@ mod tests {
     use crate::candidate;
     use crate::candidate::domain::CandidateError;
     use crate::candidate::usecase::get::{Interactor, Request, Response};
+    use crate::utils::app;
 
     // Helper to create web::Data with a custom MockGet instance
-    fn init_app_data(get_impl: Arc<dyn Interactor>) -> web::Data<crate::app::AppHandlerData> {
+    fn init_app_data(get_impl: Arc<dyn Interactor>) -> web::Data<app::AppHandlerData> {
 
         let candidate_uc = candidate::usecase::UseCase {
             get: get_impl,
         };
 
-        web::Data::new(crate::app::AppHandlerData { candidate_uc })
+        web::Data::new(app::AppHandlerData { candidate_uc })
     }
 
     #[actix_rt::test]
