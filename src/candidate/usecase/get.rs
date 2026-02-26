@@ -1,4 +1,4 @@
-use crate::candidate::domain::{Candidate, CandidateFilter, CandidateListPage};
+use crate::candidate::domain::{Candidate, CandidateFilter};
 use crate::candidate::domain::CandidateError;
 use crate::candidate::domain::Repository;
 use async_trait::async_trait;
@@ -29,7 +29,7 @@ pub struct Response {
     pub total: i32,
     pub page: i32,
     pub limit: i32,
-    pub candidates: CandidateListPage,
+    pub candidates: Vec<Candidate>,
 }
 
 impl<R: ?Sized + Send + Sync> GetCandidateUseCase<R>
@@ -56,10 +56,10 @@ where
         }).await?;
 
         Ok(Response {
-            candidates: candidates,
-            total: 10,
-            limit: 10,
-            page: 1,
+            candidates: candidates.candidates,
+            total: candidates.total as i32,
+            limit: req.limit.unwrap_or(10) as i32,
+            page: req.page.unwrap_or(1) as i32,
         })
     }
 }
@@ -70,7 +70,7 @@ mod tests {
     
     use mockall::predicate::eq;
     use crate::candidate::domain;
-    use crate::candidate::domain::{CandidateError, CandidateFilter, Repository};
+    use crate::candidate::domain::{CandidateError, CandidateFilter, CandidateListPage, Repository};
     use crate::candidate::usecase::get;
     use crate::candidate::usecase::get::Interactor;
     use std::sync::Arc;
@@ -136,7 +136,10 @@ mod tests {
                         }];
 
 
-                        Ok(candidates_ret_ok)
+                        Ok(CandidateListPage{
+                            total: 1,
+                            candidates: candidates_ret_ok,
+                        })
                     });
 
                     Box::new(repo_mock)
