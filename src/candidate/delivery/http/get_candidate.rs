@@ -3,16 +3,23 @@ use crate::utils::{app, response};
 use actix_web::{HttpResponse, web};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Candidate {
-    name: String,
+#[derive(Deserialize)]
+pub struct CandidateListQuery {
+    id: Option<String>,
+    page: Option<u32>,
+    limit: Option<u32>,
 }
 
-pub async fn get_candidate(handler: web::Data<app::AppHandlerData>) -> HttpResponse {
+pub async fn get_candidate(handler: web::Data<app::AppHandlerData>, q: web::Query<CandidateListQuery>) -> HttpResponse {
+
     let request = Request {
-        id: "1".to_string(),
+        id: q.id.clone(),
+        page: Some(q.page.unwrap_or(1)),
+        limit: Some(q.limit.unwrap_or(10)),
     };
 
+    println!("-> Received request: {:?}", request);
+    
     let candidate_uc = handler.candidate_uc.get.handle(request).await;
 
     let response = match candidate_uc {

@@ -1,4 +1,4 @@
-use crate::candidate::domain::Candidate;
+use crate::candidate::domain::{Candidate, CandidateFilter, CandidateListPage};
 use crate::candidate::domain::CandidateError;
 use crate::candidate::domain::Repository;
 use async_trait::async_trait;
@@ -17,8 +17,11 @@ where
     repository: Arc<R>,
 }
 
+#[derive(Debug)]
 pub struct Request {
-    pub id: String,
+    pub id: Option<String>,
+    pub page: Option<u32>,
+    pub limit: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,7 +29,7 @@ pub struct Response {
     pub total: i32,
     pub page: i32,
     pub limit: i32,
-    pub candidates: Vec<Candidate>,
+    pub candidates: CandidateListPage,
 }
 
 impl<R: ?Sized + Send + Sync> GetCandidateUseCase<R>
@@ -45,8 +48,12 @@ impl<R: ?Sized + Send + Sync> Interactor for GetCandidateUseCase<R>
 where
     R: Repository,
 {
-    async fn handle(&self, _: Request) -> Result<Response, CandidateError> {
-        let candidates = self.repository.find_all().await?;
+    async fn handle(&self, req: Request) -> Result<Response, CandidateError> {
+        let candidates = self.repository.find_all(CandidateFilter{
+                id: req.id,
+                page: req.page,
+                limit: req.limit,
+        }).await?;
 
         Ok(Response {
             candidates: candidates,
@@ -59,8 +66,11 @@ where
 
 #[cfg(test)]
 mod tests {
+    
+    
+    use mockall::predicate::eq;
     use crate::candidate::domain;
-    use crate::candidate::domain::{CandidateError, Repository};
+    use crate::candidate::domain::{CandidateError, CandidateFilter, Repository};
     use crate::candidate::usecase::get;
     use crate::candidate::usecase::get::Interactor;
     use std::sync::Arc;
@@ -102,7 +112,14 @@ mod tests {
 
                     let mut repo_mock = domain::MockRepository::new();
 
-                    repo_mock.expect_find_all().times(1).returning(|| {
+                    repo_mock.expect_find_all()
+                        .with(eq(CandidateFilter{
+                            id: Some("1".to_string()),
+                            page: Some(1),
+                            limit: Some(10),
+                        }))
+                        .times(1)
+                        .returning(|_: CandidateFilter| {
                         let candidates_ret_ok = vec![domain::Candidate {
                             id: "1".to_string(),
                             vote_number: 1,
@@ -118,6 +135,7 @@ mod tests {
                             updated_at: Some(chrono::Utc::now()),
                         }];
 
+
                         Ok(candidates_ret_ok)
                     });
 
@@ -131,7 +149,9 @@ mod tests {
                 input_id: "1".to_string(),
                 mock_fn: Box::new(|| {
                     let mut repo_mock = domain::MockRepository::new();
-                    repo_mock.expect_find_all().times(1).returning(|| {
+                    repo_mock.expect_find_all()
+                        .times(1)
+                        .returning(|_: CandidateFilter| {
                         Err(CandidateError::UnknownError(
                             "Database connection error".to_string(),
                         ))
@@ -149,7 +169,9 @@ mod tests {
                 input_id: "1".to_string(),
                 mock_fn: Box::new(|| {
                     let mut repo_mock = domain::MockRepository::new();
-                    repo_mock.expect_find_all().times(1).returning(|| {
+                    repo_mock.expect_find_all()
+                        .times(1)
+                        .returning(|_: CandidateFilter| {
                         Err(CandidateError::NotFound(
                             "candidate not found".to_string(),
                         ))
@@ -174,7 +196,9 @@ mod tests {
 
             let result = get_usecase
                 .handle(get::Request {
-                    id: tc.input_id.clone(),
+                    id: Some(tc.input_id.clone()),
+                    page: Some(1),
+                    limit: Some(10),
                 })
                 .await;
 
